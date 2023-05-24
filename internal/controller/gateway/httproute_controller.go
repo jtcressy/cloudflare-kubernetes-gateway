@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gatewaynetworkingk8sio
+package gateway
 
 import (
 	"context"
@@ -23,6 +23,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	gatewayv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 // HTTPRouteReconciler reconciles a HTTPRoute object
@@ -48,6 +49,14 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	_ = log.FromContext(ctx)
 
 	// TODO(user): your logic here
+	// The following code uses cloudflare-go to configure external domains in the zero trust dashboard using the gateway ref to identify the target tunnel resource
+
+	// Get the HTTPRoute resource
+	var httpRoute gatewayv1beta1.HTTPRoute
+	if err := r.Get(ctx, req.NamespacedName, &httpRoute); err != nil {
+		log.Log.Error(err, "unable to fetch HTTPRoute")
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
 
 	return ctrl.Result{}, nil
 }
@@ -55,7 +64,6 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 // SetupWithManager sets up the controller with the Manager.
 func (r *HTTPRouteReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		// Uncomment the following line adding a pointer to an instance of the controlled resource as an argument
-		// For().
+		For(&gatewayv1beta1.HTTPRoute{}).
 		Complete(r)
 }

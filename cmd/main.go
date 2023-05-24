@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	gatewaynetworkingk8siocontroller "github.com/jtcressy/cloudflare-kubernetes-gateway/internal/controller/gateway.networking.k8s.io"
+	gatewaycontroller "github.com/jtcressy/cloudflare-kubernetes-gateway/internal/controller/gateway"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -87,21 +87,21 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&gatewaynetworkingk8siocontroller.GatewayReconciler{
+	if err = (&gatewaycontroller.GatewayReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Gateway")
 		os.Exit(1)
 	}
-	if err = (&gatewaynetworkingk8siocontroller.GatewayClassReconciler{
+	if err = (&gatewaycontroller.GatewayClassReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "GatewayClass")
 		os.Exit(1)
 	}
-	if err = (&gatewaynetworkingk8siocontroller.HTTPRouteReconciler{
+	if err = (&gatewaycontroller.HTTPRouteReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {

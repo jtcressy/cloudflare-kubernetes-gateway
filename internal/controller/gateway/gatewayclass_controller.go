@@ -14,15 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gatewaynetworkingk8sio
+package gateway
 
 import (
 	"context"
+	"time"
 
+	"github.com/jtcressy/cloudflare-kubernetes-gateway/pkg/config"
+	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	gatewayv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 // GatewayClassReconciler reconciles a GatewayClass object
@@ -43,11 +48,39 @@ type GatewayClassReconciler struct {
 // the user.
 //
 // For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.4/pkg/reconcile
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.10.0/pkg/reconcile
 func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	gwClassLog := log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	gwClass := &gatewayv1beta1.GatewayClass{}
+
+	if err := r.Client.Get(ctx, req.NamespacedName, gwClass); err != nil {
+		gwClassLog.Info("NotFound")
+		return ctrl.Result{}, nil
+	}
+	gwClassLog.Info("ReconcileLoop")
+	if gwClass.Spec.ControllerName == config.CloudflareGatewayControllerName {
+		if !gwClass.DeletionTimestamp.IsZero() {
+			gwClassLog.Info("Deleting cloudflare-tunnel GatewayClass\n")
+			return ctrl.Result{}, nil
+		}
+		gwClassLog.Info("Creating CloudflareGatewayClass ")
+
+		// Update Status
+		gwClassOld := gwClass.DeepCopy()
+
+		gwClass.Status.Conditions[0].LastTransitionTime = metav1.NewTime(time.Now())
+		gwClass.Status.Conditions[0].ObservedGeneration = gwClass.Generation
+
+		gwClass.Status.Conditions[0].Status = "True"
+		gwClass.Status.Conditions[0].Message = string(gatewayv1beta1.GatewayClassReasonAccepted)
+		gwClass.Status.Conditions[0].Reason = string(gatewayv1beta1.GatewayClassReasonAccepted)
+
+		if err := r.Client.Status().Patch(ctx, gwClass, client.MergeFrom(gwClassOld)); err != nil {
+			return ctrl.Result{}, errors.Wrapf(err, "failed to update gatewayclass status")
+		}
+
+	}
 
 	return ctrl.Result{}, nil
 }
@@ -56,6 +89,6 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req ctrl.Request
 func (r *GatewayClassReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		// Uncomment the following line adding a pointer to an instance of the controlled resource as an argument
-		// For().
+		For(&gatewayv1beta1.GatewayClass{}).
 		Complete(r)
 }
