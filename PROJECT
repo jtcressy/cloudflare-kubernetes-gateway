@@ -2,10 +2,22 @@
 # This file is used to track the info used to scaffold your project
 # and allow the plugins properly work.
 # More info: https://book.kubebuilder.io/reference/project-config.html
-domain: joelcressy.dev
 layout:
 - go.kubebuilder.io/v4
 multigroup: true
 projectName: cloudflare-gateway-api
 repo: github.com/jtcressy/cloudflare-kubernetes-gateway
+resources:
+- controller: true
+  group: gateway.networking.k8s.io
+  kind: Gateway
+  version: v1beta1
+- controller: true
+  group: gateway.networking.k8s.io
+  kind: GatewayClass
+  version: v1beta1
+- controller: true
+  group: gateway.networking.k8s.io
+  kind: HTTPRoute
+  version: v1beta1
 version: "3"
